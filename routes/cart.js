@@ -2,29 +2,39 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const isAuthenticated = require('../middleware/auth'); // Importar el middleware
+const Cart = require('../models/Cart'); // Importar el modelo Cart
+const isAuthenticated = require('../middleware/auth');
 
 // Añadir al carrito (protegido)
-router.post('/add', isAuthenticated, async (req, res) => { // Aplicar middleware
+router.post('/add', isAuthenticated, async (req, res) => {
   const productId = req.body.productId;
+  const userId = req.user.userId; // Usar req.user establecido por el middleware
 
   try {
     const product = await Product.findById(productId);
 
-    if (!req.session.cart) {
-      req.session.cart = [];
+    if (!product) {
+      return res.status(404).send('Producto no encontrado');
+    }
+
+    let cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      cart = new Cart({ userId, items: [] });
     }
 
     // Verificar si el producto ya está en el carrito
-    const existingProductIndex = req.session.cart.findIndex(item => item.productId == productId);
+    const existingItemIndex = cart.items.findIndex(item => item.productId.equals(productId));
 
-    if (existingProductIndex >= 0) {
+    if (existingItemIndex >= 0) {
       // Incrementar la cantidad
-      req.session.cart[existingProductIndex].quantity += 1;
+      cart.items[existingItemIndex].quantity += 1;
     } else {
       // Agregar nuevo producto al carrito
-      req.session.cart.push({ productId: productId, quantity: 1 });
+      cart.items.push({ productId, quantity: 1 });
     }
+
+    await cart.save();
 
     res.redirect('/cart');
   } catch (err) {
@@ -33,37 +43,25 @@ router.post('/add', isAuthenticated, async (req, res) => { // Aplicar middleware
   }
 });
 
-// Nueva Ruta para eliminar un producto del carrito
-router.post('/remove', isAuthenticated, (req, res) => {
-  const productId = req.body.productId;
-
-  if (!req.session.cart) {
-    return res.redirect('/cart');
-  }
-
-  // Filtrar el carrito para eliminar el producto con el productId proporcionado
-  req.session.cart = req.session.cart.filter(item => item.productId !== productId);
-
-  res.redirect('/cart');
-});
-
 // Mostrar el carrito (protegido)
-router.get('/', isAuthenticated, async (req, res) => { // Aplicar middleware
-  if (!req.session.cart) {
-    return res.render('cart', { title: 'Carrito de Compras', cartItems: [], total: 0 });
-  }
+router.get('/', isAuthenticated, async (req, res) => {
+  const userId = req.user.userId;
 
   try {
-    const cartItems = [];
+    const cart = await Cart.findOne({ userId }).populate('items.productId');
 
-    for (const item of req.session.cart) {
-      const product = await Product.findById(item.productId);
-      cartItems.push({
-        product: product,
+    if (!cart || cart.items.length === 0) {
+      return res.render('cart', { title: 'Carrito de Compras', cartItems: [], total: 0 });
+    }
+
+    const cartItems = cart.items.map(item => {
+      const product = item.productId;
+      return {
+        product,
         quantity: item.quantity,
         totalPrice: product.price * item.quantity
-      });
-    }
+      };
+    });
 
     const total = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
@@ -71,6 +69,30 @@ router.get('/', isAuthenticated, async (req, res) => { // Aplicar middleware
   } catch (err) {
     console.error(err);
     res.status(500).send('Error al mostrar el carrito');
+  }
+});
+
+// Eliminar un producto del carrito
+router.post('/remove', isAuthenticated, async (req, res) => {
+  const productId = req.body.productId;
+  const userId = req.user.userId;
+
+  try {
+    const cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      return res.redirect('/cart');
+    }
+
+    // Eliminar el producto del carrito
+    cart.items = cart.items.filter(item => !item.productId.equals(productId));
+
+    await cart.save();
+
+    res.redirect('/cart');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error al eliminar del carrito');
   }
 });
 

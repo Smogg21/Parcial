@@ -3,6 +3,7 @@ const router = express.Router();
 const isAuthenticated = require('../middleware/auth');
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 
 
@@ -29,9 +30,14 @@ router.post('/register', async (req, res) => {
     const user = new User({ name, email, password: hashedPassword });
     await user.save();
 
-    // Establecer la sesión del usuario
-    req.session.userId = user._id;
+    // Generar el token JWT
+    const token = jwt.sign(
+      { userId: user._id, name: user.name },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
+    res.cookie('token', token, { httpOnly: true });
     res.redirect('/');
   } catch (err) {
     console.error(err);
@@ -61,8 +67,17 @@ router.post('/login', async (req, res) => {
       return res.render('login', { title: 'Iniciar Sesión', error: 'Correo o contraseña incorrectos.' });
     }
 
+    const token = jwt.sign(
+      { userId: user._id, name: user.name },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' } // El token expirará en 1 hora
+    );
+
+    // res.json({ token: token });
+
+    res.cookie('token', token, { httpOnly: true });
+
     // Establecer la sesión del usuario
-    req.session.userId = user._id;
 
     res.redirect('/');
   } catch (err) {
@@ -71,10 +86,10 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// routes/users.js
+// Ruta de la cuenta de usuario
 router.get('/account', isAuthenticated, async (req, res) => {
   try {
-    const user = await User.findById(req.session.userId);
+    const user = await User.findById(req.user.userId);
     res.render('account', { title: 'Mi Cuenta', user });
   } catch (err) {
     console.error(err);
@@ -82,19 +97,14 @@ router.get('/account', isAuthenticated, async (req, res) => {
   }
 });
 
+
+// Ruta de cierre de sesión
 // Ruta de cierre de sesión
 router.get('/logout', (req, res) => {
-  // Destruir la sesión del usuario
-  req.session.destroy(err => {
-    if (err) {
-      console.error('Error al destruir la sesión:', err);
-      return res.redirect('/');
-    }
-    // Limpiar la cookie de sesión en el cliente
-    res.clearCookie('connect.sid', { path: '/' });
-    // Redirigir al usuario a la página de inicio de sesión
-    res.redirect('/users/login');
-  });
+  // Limpiar la cookie 'token'
+  res.clearCookie('token');
+  // Redirigir al usuario a la página de inicio de sesión
+  res.redirect('/users/login');
 });
 
 module.exports = router;
