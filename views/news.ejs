@@ -1,0 +1,26 @@
+<!-- views/news.ejs -->
+<%- include('partials/header') %>
+
+<main>
+  <h1>Noticias</h1>
+  
+  <% if (news.length === 0) { %>
+    <p>No hay noticias disponibles en este momento.</p>
+  <% } else { %>
+    <div class="news-list">
+      <% news.forEach(item => { %>
+        <div class="news-item">
+          <% if (item.image) { %>
+            <img src="<%= item.image %>" alt="<%= item.title %>" class="news-image" />
+          <% } %>
+          <h2><a href="/news/<%= item._id %>"><%= item.title %></a></h2>
+          <p class="news-date"><%= item.date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+          <p><%= item.content.substring(0, 150) %>...</p>
+          <a href="/news/<%= item._id %>" class="read-more">Leer más</a>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</main>
+
+<%- include('partials/footer') %>

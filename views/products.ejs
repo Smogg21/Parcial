@@ -1,0 +1,25 @@
+<%- include('partials/header') %>
+
+<main>
+  <h1>Productos</h1>
+  <div class="filters">
+    <!-- Filtros de búsqueda -->
+  </div>
+  <div class="product-list">
+    <% products.forEach(product => { %>
+    <div class="product-item" style="margin: 0 auto">
+      <img src="<%= product.image %>" alt="<%= product.name %>" />
+      <h3><%= product.name %></h3>
+      <p><%= product.price %> USD</p>
+      <a href="/products/<%= product.id %>">Ver Detalle</a>
+      <form action="/cart/add" method="post">
+        <input type="hidden" name="productId" value="<%= product._id %>" />
+        <button type="submit" class="button">Agregar al Carrito</button>
+      </form>
+    </div>
+
+    <% }) %>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

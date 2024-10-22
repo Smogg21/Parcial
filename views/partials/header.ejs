@@ -1,0 +1,27 @@
+<!-- header.ejs -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title><%= title %> - TechGames Store</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="/">Inicio</a></li>
+        <li><a href="/products">Productos</a></li>
+        <li><a href="/news">Noticias</a></li>
+        <% if (user) { %>
+          <li><a href="/users/account">Mi Cuenta</a></li>
+          <li><a href="/users/logout">Cerrar Sesión</a></li>
+        <% } else { %>
+          <li><a href="/users/login">Iniciar Sesión</a></li>
+          <li><a href="/users/register">Registrarse</a></li>
+        <% } %>
+        <li><a href="/cart">Carrito</a></li>
+      </ul>
+    </nav>
+  </header>

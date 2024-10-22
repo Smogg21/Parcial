@@ -1,0 +1,17 @@
+<!-- views/news-detail.ejs -->
+<%- include('partials/header') %>
+
+<main>
+  <h1><%= news.title %></h1>
+  <p class="news-date"><%= news.date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+  
+  <% if (news.image) { %>
+    <img src="<%= news.image %>" alt="<%= news.title %>" class="news-detail-image" />
+  <% } %>
+  
+  <p><%= news.content %></p>
+  
+  <a href="/news" class="back-link">← Volver a Noticias</a>
+</main>
+
+<%- include('partials/footer') %>
